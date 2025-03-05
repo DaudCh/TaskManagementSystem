@@ -26,6 +26,7 @@ namespace Task
             user.Add(new User { UserID = id, Username = username, Email = email, Password = password, Role = role });
             userservice.SaveData(user);
             Console.WriteLine("User Added SuccessFully");
+            Console.WriteLine("User Added SuccessFully");
             Console.ReadLine();
         }
         static void ViewUser()
