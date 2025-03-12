@@ -1,120 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using Task.Models;
+﻿using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
+using Microsoft.EntityFrameworkCore;
+using System;
 
-namespace Task
+
+
+namespace TaskI
 {
     class Program
     {
-        static DataService<User> userservice = new DataService<User> ("users.json");
-        static DataService<TaskItem> taskservice = new DataService<TaskItem>("tasks.json");
-        static void AddUser()
+        static void Main(string[] args)
         {
-            Console.WriteLine("Enter Userid:");
-            string id = Console.ReadLine();
-            Console.WriteLine("Enter Username:");
-            string username = Console.ReadLine();
-            Console.WriteLine("Enter Email :");
-            string email = Console.ReadLine();
-            Console.WriteLine("Enter Password");
-            string password = Console.ReadLine();
-            Console.WriteLine("Enter Role");
-            string role = Console.ReadLine();
+            Console.WriteLine("Starting Task application..."); //Testing for PR
+            // Create a Host to manage services
+            var host = CreateHostBuilder(args).Build();
 
-            List<User> user = userservice.GetData();
-            user.Add(new User { UserID = id, Username = username, Email = email, Password = password, Role = role });
-            userservice.SaveData(user);
-            Console.WriteLine("User Added SuccessFully");
-            Console.ReadLine();
-        }
-        static void ViewUser()
-        {
-            List<User> users = userservice.GetData();
-            Console.WriteLine("---Users---");
-            foreach(var us in users)
+            // Run database migrations
+            using (var scope = host.Services.CreateScope())
             {
-                Console.WriteLine($" ID: {us.UserID}, Name : {us.Username}");
-            }
-            Console.WriteLine("continue");
-            Console.ReadLine();
-        }
-        static void AddTask()
-        {
-            Console.Clear();
-            Console.WriteLine("Enter Task id :");
-            string id = Console.ReadLine();
-            Console.WriteLine("Enter Title:");
-            string title = Console.ReadLine();
-            Console.WriteLine("Enter Description:");
-            string Desc = Console.ReadLine();
-            Console.WriteLine("Enter priority ");
-            string priority = Console.ReadLine();
-            Console.WriteLine("Enter Status: ");
-            string status = Console.ReadLine();
-            Console.WriteLine("Enter Created By (UserID)");
-            string createdby = Console.ReadLine();
-            Console.WriteLine("Enter Deadline: ");
-            DateTime deadline = DateTime.Parse(Console.ReadLine());
-            
-            List<TaskItem> tasks = taskservice.GetData();
-            tasks.Add(new TaskItem { TaskID = id, Title = title, Description = Desc,Priority=priority,Status = status,CreatedBy=createdby,Deadline=deadline });
-            taskservice.SaveData(tasks);
-            Console.WriteLine("Task Added Successfully");
-            Console.ReadLine();
-        }
-        static void ViewTasks()
-        {
-            List<TaskItem> tasks = taskservice.GetData();
-            Console.WriteLine("---Tasks---");
-            
-            foreach(var ta in tasks)
-            {
-                Console.WriteLine($"ID : {ta.TaskID},Title :{ta.Title},Status : {ta.Status},Deadline:{ta.Deadline.ToShortDateString()}");
-            }
-            Console.WriteLine("Continue");
-            Console.ReadLine();
-        }
-        static void Main(string[] args) {
-            while(true)
-            {
-                Console.Clear();
-                Console.WriteLine("Task MAnagement System");
-                Console.WriteLine("1. Add User");
-                Console.WriteLine("2. View User");
-                Console.WriteLine("3. Add Task");
-                Console.WriteLine("4. View Task");
-                Console.WriteLine("5. Exit");
-
-                string choice = Console.ReadLine();
-                switch (choice)
+                var services = scope.ServiceProvider;
+                try
                 {
-                    case "1":
-                        AddUser();
-                        break;
-                    case "2":
-                       ViewUser();
-                        break;
-                    case "3":
-                      AddTask();
-                       break;
-                    case "4":
-                        ViewTasks();
-                        break;
-                    case "5":
-                        return;
-                    default:
-                        Console.WriteLine("Invalid Option ");
-                        Console.ReadLine();
-                        break;
+                    var context = services.GetRequiredService<ApplicationDbContext>();
+                    Console.WriteLine("Applying migrations...");
+                    context.Database.Migrate();
+                    Console.WriteLine("Migrations applied successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred while migrating the database: {ex.Message}");
+                }
+            }
+        }
 
+        static IHostBuilder CreateHostBuilder(string[] args) =>
+            Host.CreateDefaultBuilder(args)
+                .ConfigureServices((context, services) =>
+                {
+                    // Load configuration
+                    var configuration = context.Configuration;
+
+                    // Register repository layer (removes direct dependency on DbContext)
+                    services.AddDbContext<ApplicationDbContext>(options =>
+                    options.UseSqlServer("Data Source=DESKTOP-4F8B9BO\\MSSQLSERVER01;Initial Catalog=TaskDb;Integrated Security=True;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Application Intent=ReadWrite;Multi Subnet Failover=False"));
+                });
 
 
                 }
-            }
-           
-
-        }
-        
-    }
-}
+  }
